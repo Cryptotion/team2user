@@ -1,0 +1,47 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - echo "Install Phase - if you need additional package, add it in this stage"
+  pre_build:
+      commands:
+        # This Docker Image tag will have date, time and Codecommit version
+        - TAG="latest"
+        # Updating Docker Image tag in your Kubernetes Deployment Manifest        
+        - echo "Update Image tag in kubernetes manifest"
+        - sed -i 's@CONTAINER_IMAGE@'"$REPOSITORY_URI:$TAG"'@' manifests/deployment.yaml
+        # Check AWS CLI Version        
+        - echo "Checking AWS CLI Version..."
+        - aws --version
+        # Login to ECR Registry 
+        - echo "Login in to Amazon ECR Registry"
+        - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/a6p3b4m6
+        # Update Kube config Home Directory
+        - export KUBECONFIG=$HOME/.kube/config
+  build:
+    commands:
+      # Building Docker Image
+      - echo "Docker build started on `date`"
+      - echo "Building the Docker image..."
+      - docker build --tag $REPOSITORY_URI:$TAG .
+  post_build:
+    commands:
+      # Push Docker Image to ECR Repository
+      - echo "Docker build completed on `date`"
+      - echo "Pushing the Docker image to ECR Repository"
+      - docker push $REPOSITORY_URI:$TAG
+      - echo "Docker Push to ECR Repository Completed -  $REPOSITORY_URI:$TAG"    
+      - echo "Setting Environment Variables related to AWS CLI for Kube Config Setup"          
+      - export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+      - export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+      # Show time, applying manifests changes using kubectl
+      - aws eks --region us-east-1 update-kubeconfig --name $EKS_CLUSTERNAME
+      - echo "Apply changes to kube manifests"           
+      - kubectl apply -f manifests/
+      - echo "All done!!!! Kubernetes changes applied"           
+      # Create Artifacts which we can use if we want to continue our pipeline for other stages
+      - printf '[{"name":"deployment.yaml","imageUri":"%s"}]' $REPOSITORY_URI:$TAG > build.json            
+artifacts:
+  files: 
+    - build.json   
+    - manifests/*

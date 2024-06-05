@@ -1,0 +1,33 @@
+<configuration>
+	<appender name="ConsoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
+       <withFormattedMessage>true</withFormattedMessage>
+       <withMessage>false</withMessage>
+       <withArguments>false</withArguments> 
+       </encoder>
+		
+	</appender>
+	
+	<appender name="FileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<file>
+			revhire.log
+		</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>revhire-%d{yy-MM-dd_HH-mm}.%i.log</fileNamePattern>
+			<maxFileSize>10MB</maxFileSize>
+			<maxHistory>10</maxHistory>
+			
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.JsonEncoder">
+       <withFormattedMessage>true</withFormattedMessage>
+       <withMessage>false</withMessage>
+       <withArguments>false</withArguments> 
+       </encoder>
+	</appender>
+	
+	<root level="Info">
+		
+		<appender-ref ref="ConsoleAppender"></appender-ref>
+		<appender-ref ref="FileAppender"></appender-ref>
+	</root>
+</configuration>
